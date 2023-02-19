@@ -3,18 +3,25 @@
 set nocompatible
 set path +=**
 filetype off
+set autoread
 syntax enable
 set number
 set nohlsearch
+set signcolumn=yes
 set incsearch
 set noshowmode
 set nocp
 set termguicolors
-set tabstop=4 softtabstop=4 shiftwidth=4 expandtab
+set colorcolumn=105
+set tabstop=4
+set softtabstop=4
+set shiftwidth=4
+set expandtab
 set smartindent
+set clipboard=unnamedplus
 set autoindent
 set scrolloff=10
-set autoread
+set autoread "If file modified somewhere else auto updates in vim
 setlocal spelllang=en_us
 set nowrap
 set relativenumber
@@ -34,11 +41,13 @@ set undodir=~/.vim/undodir
 set laststatus=2  " always display the status line
 
 " allow buffer switching without saving
-set hidden
+"set hidden
 set ic
 set updatetime=50
 
-call plug#begin('~/.vim/plugged')
+let g:ale_disable_lsp = 1
+
+call plug#begin('~/.config/nvim/plugged')
 
 Plug 'posva/vim-vue'
 Plug 'scrooloose/nerdcommenter'
@@ -48,8 +57,6 @@ Plug 'scrooloose/nerdcommenter'
 "   CocInstall coc-tsserver coc-json coc-html coc-css
 Plug 'neoclide/coc.nvim', {'do': { -> coc#util#install()}}
 Plug 'scrooloose/nerdtree'
-Plug 'tpope/vim-fugitive'
-Plug 'tpope/vim-rhubarb'
 "Plug 'MobiusHorizons/fugitive-stash.vim'
 Plug 'ap/vim-css-color'
 Plug 'vim-airline/vim-airline'
@@ -57,46 +64,97 @@ Plug 'vim-airline/vim-airline-themes'
 Plug 'alvan/vim-closetag'
 "Plug 'godlygeek/tabular'
 Plug 'plasticboy/vim-markdown'
-Plug 'ervandew/supertab'
 Plug 'Vimjas/vim-python-pep8-indent'
 Plug 'tpope/vim-sleuth'
 Plug 'pangloss/vim-javascript'
-Plug 'voldikss/vim-floaterm'
+"Plug 'voldikss/vim-floaterm'
 Plug 'jiangmiao/auto-pairs'
-Plug 'mbbill/undotree'
 Plug 'HerringtonDarkholme/yats.vim' " TypeScript sintax
-Plug 'itchyny/lightline.vim'
-Plug 'prettier/vim-prettier', {
-      \ 'do': 'npm install' }
-Plug 'dyng/ctrlsf.vim'
-Plug 'w0rp/ale'
+Plug 'itchyny/lightline.vim' "status line
+Plug 'prettier/vim-prettier', { 'do': 'npm install --frozen-lockfile --production' }
+" Plug 'dyng/ctrlsf.vim'
+Plug 'dense-analysis/ale'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-surround'
-Plug 'editorconfig/editorconfig-vim'
+Plug 'nvie/vim-flake8'
 "Plug 'moll/vim-node'
 Plug 'machakann/vim-highlightedyank'
 Plug 'ntpeters/vim-better-whitespace'
 Plug 'patstockwell/vim-monokai-tasty'
 Plug 'RRethy/vim-illuminate'
 "Plug 'rhysd/git-messenger.vim'
-"Plug 'antoinemadec/coc-fzf'
+Plug 'antoinemadec/coc-fzf'
 
 " Initialize plugin system
 call plug#end()
 
-nnoremap <leader>d "_d
-xnoremap <leader>d "_d
-xnoremap <leader>p "_dP
+" Use spaces instead of tabs for prettier
+let g:prettier#config#use_tabs = 'false'
+
+"nnoremap <leader>d "_d
+"xnoremap <leader>d "_d
+"xnoremap <leader>p "_dP
+
+" Use tab for trigger completion with characters ahead and navigate.
+" NOTE: There's always complete item selected by default, you may want to enable
+" no select by `"suggest.noselect": true` in your configuration file.
+" NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
+" other plugin before putting this into your config.
+"
+inoremap <silent><expr> <TAB>
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ CheckBackspace() ? "\<Tab>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+
+" Make <CR> to accept selected completion item or notify coc.nvim to format
+" <C-g>u breaks current undo, please make your own choice.
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+
+function! CheckBackspace() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <c-space> to trigger completion.
+if has('nvim')
+  inoremap <silent><expr> <c-space> coc#refresh()
+else
+  inoremap <silent><expr> <c-@> coc#refresh()
+endif
+
+
+"nerdcommenter with vue files
+let g:ft = ''
+function! NERDCommenter_before()
+  if &ft == 'vue'
+    let g:ft = 'vue'
+    let stack = synstack(line('.'), col('.'))
+    if len(stack) > 0
+      let syn = synIDattr((stack)[0], 'name')
+      if len(syn) > 0
+        exe 'setf ' . substitute(tolower(syn), '^vue_', '', '')
+      endif
+    endif
+  endif
+endfunction
+function! NERDCommenter_after()
+  if g:ft == 'vue'
+    setf vue
+    let g:ft = ''
+  endif
+endfunction
 
 
 " Coc disable
-autocmd FileType python let b:coc_suggest_disable=1
-autocmd FileType javascript let b:coc_suggest_disable=1
-autocmd FileType scss setl iskeyword+=@-@
+"autocmd FileType python let b:coc_suggest_disable=1
+"autocmd FileType javascript let b:coc_suggest_disable=1
+"autocmd FileType scss setl iskeyword+=@-@
 
-"kite
-let g:kite_supported_languages = ['python', 'javascript', 'go']
+autocmd FileType python let b:coc_root_patterns = ['.git', '.env']
+
 
 colorscheme vim-monokai-tasty
 
@@ -106,7 +164,6 @@ else
     inoremap <silent><expr> <c-space> coc#refresh()
 endif
 
-let g:SuperTabDefaultCompletionType = "<c-n>"
 
 "Display whitespace color
 let g:better_whitespace_ctermcolor='red'
@@ -114,6 +171,7 @@ let g:better_whitespace_ctermcolor='red'
 "To enable highlighting and stripping whitespace on save by default, use respectively
 let g:better_whitespace_enabled=1
 let g:strip_whitespace_on_save=1
+
 
 
 let mapleader = "\<Space>"
@@ -134,16 +192,12 @@ highlight ExtraWhitespace ctermbg=red guibg=red
 au BufNewFile,BufRead & *.py \ "folding on python based on indent
   set foldmethod=indent
 
-" Configuration floaterm
-let g:floaterm_keymap_new    = '<leader>/' " '<F5>'
-let g:floaterm_keymap_prev   = '<leader>m'
-let g:floaterm_keymap_next   = '<leader>n'
-let g:floaterm_keymap_toggle = '<leader>,'
 
 "map the folding method
-nnoremap <space> za<CR>
+nnoremap <space>za
 
 let g:fuf_file_exclude = '\v\~$|\.o$|\.exe$|\.bak$|\.swp$|\.pyc$'
+let g:fuf_dir_exclude = '\v.(hg|git|bzr|dist|node_modules|build|venv)'
 
 
 " FZF key bindings
@@ -168,9 +222,15 @@ map <silent> gi <Plug>(coc-implementation)
 map <silent> gr <Plug>(coc-references)
 
 nnoremap <leader>u :UndotreeToggle<CR>
-let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
+let NERDTreeIgnore=['\.pyc$', '\~$', '^node_modules$'] "ignore files in NERDTree
 
-let g:ale_python_pylint_options = '--load-plugins pylint-django' "make ale work with python
+"let g:ale_python_pylint_options = '--load-plugins pylint-django' "make ale work with python
+
+let g:ale_linters={
+      \ 'python': ['flake8'],
+      \'typescript': [ 'eslint' ],
+      \'javascript': [ 'eslint' ],
+      \}
 
 " hitting jj will jump out of insert mode
 inoremap jj <esc>
@@ -191,6 +251,6 @@ nnoremap <buffer> k gk
 inoremap <down> <C-C>gja
 inoremap <up> <C-C>gka
 
-nnoremap <leader>R :source ~/.vimrc<CR>
+nnoremap <leader>R :source ~/.config/nvim/init.vim<CR>
 
 packloadall
